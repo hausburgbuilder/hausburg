@@ -1,0 +1,6 @@
+{
+  "name": "HASBURGO | Construcción de Casas en Bloxburg",
+  "description": "Estudio boutique de diseño arquitectónico y construcción premium de casas para Bloxburg (Roblox). Built with care, enjoy with ease.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
