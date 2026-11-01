@@ -200,7 +200,15 @@ export function mapSupabaseRowToHouse(row: any): House {
       (fullDescription.length > 150 ? `${fullDescription.slice(0, 147)}...` : fullDescription)
   ).trim();
 
-  const featured = Boolean(row.featured === true || row.featured === 'true' || row.featured === 1);
+  const rawFeatured = row.featured ?? row.is_featured ?? row.destacada ?? row.destacado;
+  const featured = Boolean(
+    rawFeatured === true ||
+      rawFeatured === 'true' ||
+      rawFeatured === 1 ||
+      rawFeatured === '1' ||
+      rawFeatured === 'yes' ||
+      rawFeatured === 'si'
+  );
 
   return {
     id: String(row.id || `supabase-${Math.random().toString(36).substring(2, 9)}`),
