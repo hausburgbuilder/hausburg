@@ -86,21 +86,21 @@ export function OrderConfirmationModal({ orderData, onClose }: OrderConfirmation
           </div>
 
           <div className="pt-2 border-t border-white/10 flex justify-between items-center text-[11px]">
-            <span className="text-[#8ba391]">Destination:</span>
-            <span className="text-[#86efac] font-medium">{DESIGNATED_EMAIL}</span>
+            <span className="text-[#8ba391]">Status:</span>
+            <span className="text-[#86efac] font-medium flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5" /> Sent via Formspree
+            </span>
           </div>
         </div>
 
         {/* Action Buttons */}
         <div className="mt-6 flex flex-col gap-2.5">
-          <a
-            href={mailtoLink}
-            className="liquid-glass-btn-primary py-3 px-4 rounded-xl text-xs uppercase tracking-wider font-bold flex items-center justify-center gap-2 text-center"
+          <button
+            onClick={onClose}
+            className="liquid-glass-btn-primary py-3 px-4 rounded-xl text-xs uppercase tracking-wider font-bold flex items-center justify-center gap-2 text-center cursor-pointer"
           >
-            <Mail className="w-4 h-4" />
-            <span>Open in my email client to send</span>
-            <ExternalLink className="w-3.5 h-3.5 opacity-70" />
-          </a>
+            <span>Understood & Close</span>
+          </button>
 
           <button
             onClick={handleCopy}
@@ -128,3 +128,4 @@ export function OrderConfirmationModal({ orderData, onClose }: OrderConfirmation
     </div>
   );
 }
+
