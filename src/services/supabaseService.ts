@@ -40,9 +40,19 @@ export function mapSupabaseRowToHouse(row: any): House {
   const bathrooms = parseFloat(String(row.bathrooms ?? row.baths ?? '2').replace(/[^0-9.]/g, '')) || 2;
   const floors = parseInt(String(row.floors ?? '1').replace(/[^0-9]/g, ''), 10) || 1;
 
-  // Build time (e.g., "2 hours", "3.5", etc.)
-  const rawTime = row.estimated_time ?? row.build_time_hours ?? row.buildTimeHours ?? row.build_time ?? '2.0';
-  const buildTimeHours = parseFloat(String(rawTime).replace(/[^0-9.]/g, '')) || 2.0;
+  // Build time (e.g. "2 hours", "1-2 horas", "45 mins", "3h")
+  const rawTime = String(row.estimated_time ?? row.build_time ?? row.build_time_hours ?? row.buildTimeHours ?? '').trim();
+  let buildTimeDisplay = rawTime;
+  let buildTimeHours = 2.0;
+
+  if (rawTime) {
+    const match = rawTime.match(/([0-9]+(?:\.[0-9]+)?)/);
+    if (match) {
+      buildTimeHours = parseFloat(match[1]) || 2.0;
+    }
+  } else {
+    buildTimeDisplay = '2 hours';
+  }
 
   // Plot size (recommended_plot, plot_size)
   const plotSizeRaw = String(row.recommended_plot ?? row.plot_size ?? row.plotSize ?? 'Regular Plot');
@@ -125,14 +135,63 @@ export function mapSupabaseRowToHouse(row: any): House {
     galleryImages = [{ url: mainImage, caption: `${name} Main Perspective` }];
   }
 
+  // Category detection: checks category, house_type, type, style, architectural_style, or architectural_concept
+  const rawCat = String(
+    row.category ??
+      row.house_type ??
+      row.houseType ??
+      row.type ??
+      row.style ??
+      row.architectural_style ??
+      row.architectural_concept ??
+      ''
+  ).toLowerCase().trim();
+
+  let category: 'mansions' | 'minimalist' | 'family' = 'mansions';
+  let categoryLabel = 'Modern Mansion';
+
+  if (rawCat.includes('min') || rawCat.includes('minimal') || rawCat.includes('minimalista')) {
+    category = 'minimalist';
+    categoryLabel = 'Minimalist';
+  } else if (rawCat.includes('fam') || rawCat.includes('cot') || rawCat.includes('cozy') || rawCat.includes('familiar')) {
+    category = 'family';
+    categoryLabel = 'Family Home';
+  } else if (rawCat.includes('mod') || rawCat.includes('man') || rawCat.includes('lux') || rawCat.includes('mansion') || rawCat.includes('mansión')) {
+    category = 'mansions';
+    categoryLabel = 'Modern Mansion';
+  } else {
+    // If not specified in category fields, check if title gives a hint
+    const nameLower = name.toLowerCase();
+    if (nameLower.includes('min') || nameLower.includes('minimal')) {
+      category = 'minimalist';
+      categoryLabel = 'Minimalist';
+    } else if (nameLower.includes('fam') || nameLower.includes('cot') || nameLower.includes('familiar')) {
+      category = 'family';
+      categoryLabel = 'Family Home';
+    } else {
+      category = 'mansions';
+      categoryLabel = 'Modern Mansion';
+    }
+  }
+
+  // Override categoryLabel if explicitly provided in row
+  if (row.category_label || row.categoryLabel) {
+    categoryLabel = String(row.category_label || row.categoryLabel);
+  }
+
   // Description / Architectural concept
+  // If architectural_concept is just a category word (e.g. "Modern", "Minimalist"), use a rich description
+  const rawConcept = String(row.architectural_concept ?? '').trim();
+  const isConceptJustCategory = rawConcept.length < 25 && (rawConcept.toLowerCase() === rawCat);
+
+  let fallbackDesc = (!isConceptJustCategory && rawConcept) ? rawConcept : undefined;
   const fullDescription = String(
-    row.architectural_concept ??
-      row.full_description ??
+    row.full_description ??
       row.fullDescription ??
       row.description ??
+      fallbackDesc ??
       row.short_description ??
-      'A custom luxury home designed specifically for Roblox Bloxburg gameplay and visual presence.'
+      `A custom ${categoryLabel.toLowerCase()} designed specifically for Roblox Bloxburg gameplay and visual presence.`
   ).trim();
 
   const shortDescription = String(
@@ -140,20 +199,6 @@ export function mapSupabaseRowToHouse(row: any): House {
       row.shortDescription ??
       (fullDescription.length > 150 ? `${fullDescription.slice(0, 147)}...` : fullDescription)
   ).trim();
-
-  let category = String(row.category || 'mansions').toLowerCase();
-  if (!['all', 'mansions', 'minimalist', 'family'].includes(category)) {
-    if (category.includes('man') || category.includes('luxury') || category.includes('mod')) category = 'mansions';
-    else if (category.includes('min')) category = 'minimalist';
-    else if (category.includes('fam') || category.includes('cot')) category = 'family';
-    else category = 'mansions';
-  }
-
-  const categoryLabel = String(
-    row.category_label ??
-      row.categoryLabel ??
-      (category === 'mansions' ? 'Modern Mansion' : category === 'minimalist' ? 'Minimalist Estate' : 'Family Home')
-  );
 
   const featured = Boolean(row.featured === true || row.featured === 'true' || row.featured === 1);
 
@@ -170,6 +215,7 @@ export function mapSupabaseRowToHouse(row: any): House {
     floors,
     plotSize,
     buildTimeHours,
+    buildTimeDisplay,
     requiredGamepasses,
     featured,
     mainImage,
