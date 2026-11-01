@@ -171,7 +171,7 @@ export function HouseDetailModal({ house, onClose, onSelectForContact }: HouseDe
                 <Clock className="w-3 h-3 text-[#86efac]" /> Estimated Time
               </p>
               <p className="text-xl font-bold text-white font-display mt-0.5">
-                ~{house.buildTimeHours} hours
+                {house.buildTimeDisplay ? house.buildTimeDisplay : `~${house.buildTimeHours} hours`}
               </p>
               <p className="text-[10px] text-[#c4d4c8]">Built live in your server</p>
             </div>
