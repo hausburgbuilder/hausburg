@@ -24,20 +24,33 @@ export function getSupabaseClient(customUrl?: string, customKey?: string): Supab
 }
 
 export function mapSupabaseRowToHouse(row: any): House {
-  const priceUSD =
-    parseFloat(String(row.price_usd ?? row.priceUSD ?? row.price ?? '25').replace(/[^0-9.]/g, '')) || 25;
-  const bloxburgCashEst =
-    parseInt(String(row.bloxburg_cash_est ?? row.bloxburgCashEst ?? row.bloxburg_cash ?? row.bloxburg_cost ?? '120000').replace(/[^0-9]/g, ''), 10) || 120000;
+  // Title / Name mapping (supports title, name, model_name)
+  const name = String(row.title ?? row.name ?? row.model_name ?? 'Bloxburg Architectural Build').trim();
+
+  // Price / Construction fee in USD
+  const rawPrice = row.construction_fee ?? row.price_usd ?? row.priceUSD ?? row.price ?? row.fee ?? 25;
+  const priceUSD = parseFloat(String(rawPrice).replace(/[^0-9.]/g, '')) || 25;
+
+  // Bloxburg cash cost ($B)
+  const rawCash = row.bloxburg_cash ?? row.bloxburg_cash_est ?? row.bloxburgCashEst ?? row.bloxburg_cost ?? 120000;
+  const bloxburgCashEst = parseInt(String(rawCash).replace(/[^0-9]/g, ''), 10) || 120000;
+
+  // Rooms and floors
   const bedrooms = parseInt(String(row.bedrooms ?? row.beds ?? '3').replace(/[^0-9]/g, ''), 10) || 3;
   const bathrooms = parseFloat(String(row.bathrooms ?? row.baths ?? '2').replace(/[^0-9.]/g, '')) || 2;
   const floors = parseInt(String(row.floors ?? '1').replace(/[^0-9]/g, ''), 10) || 1;
-  const buildTimeHours =
-    parseFloat(String(row.build_time_hours ?? row.buildTimeHours ?? row.build_time ?? row.estimated_time ?? '2.0').replace(/[^0-9.]/g, '')) || 2.0;
 
-  const plotSizeRaw = String(row.plot_size ?? row.plotSize ?? 'Regular Plot');
-  const plotSize = plotSizeRaw.toLowerCase().includes('large') ? 'Large Plot' : 'Regular Plot';
+  // Build time (e.g., "2 hours", "3.5", etc.)
+  const rawTime = row.estimated_time ?? row.build_time_hours ?? row.buildTimeHours ?? row.build_time ?? '2.0';
+  const buildTimeHours = parseFloat(String(rawTime).replace(/[^0-9.]/g, '')) || 2.0;
 
-  // Gamepasses array handling (supports string, array, or CSV)
+  // Plot size (recommended_plot, plot_size)
+  const plotSizeRaw = String(row.recommended_plot ?? row.plot_size ?? row.plotSize ?? 'Regular Plot');
+  const plotSize = plotSizeRaw.toLowerCase().includes('large') || plotSizeRaw.toLowerCase().includes('advanced')
+    ? 'Large Plot'
+    : 'Regular Plot';
+
+  // Gamepasses handling
   let requiredGamepasses: string[] = [];
   const rawGamepasses = row.required_gamepasses ?? row.requiredGamepasses ?? row.gamepasses;
   if (Array.isArray(rawGamepasses)) {
@@ -49,13 +62,13 @@ export function mapSupabaseRowToHouse(row: any): House {
     requiredGamepasses = ['Advanced Placing', 'Multiple Floors'];
   }
 
-  // Features list (Included Features & Finishes)
+  // Features list
   let features: string[] = [];
-  const rawFeatures = row.features ?? row.included_features ?? row.finishes;
+  const rawFeatures = row.features_list ?? row.features ?? row.included_features ?? row.finishes;
   if (Array.isArray(rawFeatures)) {
     features = rawFeatures.map(String).map((s) => s.trim()).filter(Boolean);
   } else if (typeof rawFeatures === 'string') {
-    features = rawFeatures.split(/[;\n]/).map((s) => s.trim()).filter(Boolean);
+    features = rawFeatures.split(/[;\n,]/).map((s) => s.trim()).filter(Boolean);
   }
   if (features.length === 0) {
     features = [
@@ -66,56 +79,71 @@ export function mapSupabaseRowToHouse(row: any): House {
     ];
   }
 
-  // Gallery images handling (supports array of strings, objects, or semicolon/comma-separated strings)
+  // Gallery images handling (supports array or string)
   let galleryImages: { url: string; caption: string }[] = [];
-  const rawGallery = row.gallery_images ?? row.galleryImages ?? row.gallery;
+  const rawGallery =
+    row.gallery_image_urls ??
+    row.gallery_images ??
+    row.galleryImages ??
+    row.gallery_urls ??
+    row.gallery;
+
   if (Array.isArray(rawGallery)) {
-    galleryImages = rawGallery.map((item, idx) => {
-      if (typeof item === 'string') {
-        return { url: item.trim(), caption: `${row.name || 'House'} View ${idx + 1}` };
-      }
-      return {
-        url: (item.url || item.image_url || '').trim(),
-        caption: item.caption || item.title || `${row.name || 'House'} View ${idx + 1}`,
-      };
-    }).filter((img) => Boolean(img.url));
+    galleryImages = rawGallery
+      .map((item, idx) => {
+        if (typeof item === 'string') {
+          return { url: item.trim(), caption: `${name} View ${idx + 1}` };
+        }
+        return {
+          url: (item.url || item.image_url || '').trim(),
+          caption: item.caption || item.title || `${name} View ${idx + 1}`,
+        };
+      })
+      .filter((img) => Boolean(img.url));
   } else if (typeof rawGallery === 'string') {
-    galleryImages = rawGallery.split(/[,;]/).map((url, idx) => ({
-      url: url.trim(),
-      caption: `${row.name || 'House'} View ${idx + 1}`,
-    })).filter((img) => Boolean(img.url));
+    galleryImages = rawGallery
+      .split(/[,;]/)
+      .map((url, idx) => ({
+        url: url.trim(),
+        caption: `${name} View ${idx + 1}`,
+      }))
+      .filter((img) => Boolean(img.url));
   }
 
-  const mainImage =
-    row.main_image ??
-    row.mainImage ??
-    row.image_url ??
-    row.image ??
-    (galleryImages[0]?.url || '/src/assets/images/bloxburg_modern_villa_1793408050800.jpg');
+  // Main Image URL (supports main_image_url, main_image, mainImage, image_url, imageUrl, image)
+  const mainImage = String(
+    row.main_image_url ??
+      row.main_image ??
+      row.mainImage ??
+      row.image_url ??
+      row.imageUrl ??
+      row.image ??
+      (galleryImages[0]?.url || '/src/assets/images/bloxburg_modern_villa_1793408050800.jpg')
+  ).trim();
 
   if (galleryImages.length === 0) {
-    galleryImages = [{ url: mainImage, caption: `${row.name || 'House'} Main Perspective` }];
+    galleryImages = [{ url: mainImage, caption: `${name} Main Perspective` }];
   }
 
+  // Description / Architectural concept
   const fullDescription = String(
-    row.full_description ??
+    row.architectural_concept ??
+      row.full_description ??
       row.fullDescription ??
-      row.architectural_concept ??
       row.description ??
       row.short_description ??
-      row.shortDescription ??
       'A custom luxury home designed specifically for Roblox Bloxburg gameplay and visual presence.'
-  );
+  ).trim();
 
   const shortDescription = String(
     row.short_description ??
       row.shortDescription ??
       (fullDescription.length > 150 ? `${fullDescription.slice(0, 147)}...` : fullDescription)
-  );
+  ).trim();
 
   let category = String(row.category || 'mansions').toLowerCase();
   if (!['all', 'mansions', 'minimalist', 'family'].includes(category)) {
-    if (category.includes('man') || category.includes('luxury')) category = 'mansions';
+    if (category.includes('man') || category.includes('luxury') || category.includes('mod')) category = 'mansions';
     else if (category.includes('min')) category = 'minimalist';
     else if (category.includes('fam') || category.includes('cot')) category = 'family';
     else category = 'mansions';
@@ -127,17 +155,11 @@ export function mapSupabaseRowToHouse(row: any): House {
       (category === 'mansions' ? 'Modern Mansion' : category === 'minimalist' ? 'Minimalist Estate' : 'Family Home')
   );
 
-  const featuredRaw = row.featured;
-  const featured =
-    featuredRaw === true ||
-    featuredRaw === 'true' ||
-    featuredRaw === 1 ||
-    featuredRaw === '1' ||
-    featuredRaw === 'yes';
+  const featured = Boolean(row.featured === true || row.featured === 'true' || row.featured === 1);
 
   return {
     id: String(row.id || `supabase-${Math.random().toString(36).substring(2, 9)}`),
-    name: String(row.name || 'Bloxburg Architectural Build'),
+    name,
     tagline: String(row.tagline || 'Custom Architectural Commission'),
     category: category as any,
     categoryLabel,
@@ -167,19 +189,17 @@ export async function fetchHousesFromSupabase(customUrl?: string, customKey?: st
     const { data, error } = await client.from('houses').select('*');
 
     if (error) {
-      console.warn('Supabase query error (falling back to curated models):', error.message);
+      console.warn('Supabase query notice:', error.message);
       return { houses: HOUSES, isFromSupabase: false };
     }
 
     if (data && data.length > 0) {
-      const parsed = data.map(mapSupabaseRowToHouse);
-      return { houses: parsed, isFromSupabase: true };
+      return { houses: data.map(mapSupabaseRowToHouse), isFromSupabase: true };
     }
 
-    // When the table has 0 rows, return curated houses as high-quality initial portfolio
+    // Si tu tabla está vacía, muestra el catálogo modelo para que el sitio no quede en blanco
     return { houses: HOUSES, isFromSupabase: false };
   } catch (err: any) {
-    console.warn('Supabase connection exception (falling back to curated models):', err?.message);
     return { houses: HOUSES, isFromSupabase: false };
   }
 }
