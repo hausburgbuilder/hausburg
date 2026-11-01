@@ -11,6 +11,7 @@ export interface House {
   floors: number;
   plotSize: 'Regular Plot' | 'Large Plot';
   buildTimeHours: number;
+  buildTimeDisplay?: string;
   requiredGamepasses: string[];
   featured: boolean;
   mainImage: string;
