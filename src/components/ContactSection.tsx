@@ -115,12 +115,12 @@ export function ContactSection({ initialHouse, houses = HOUSES, onSuccessSubmit 
       } else {
         const data = await response.json().catch(() => null);
         const errMsg =
-          data?.errors?.[0]?.message || 'Hubo un error al enviar el formulario a Formspree. Por favor intenta nuevamente.';
+          data?.errors?.[0]?.message || 'There was an issue submitting your request via Formspree. Please try again.';
         setSubmissionError(errMsg);
       }
     } catch (err: any) {
-      console.error('Error enviando a Formspree:', err);
-      setSubmissionError('Error de red al conectar con Formspree. Por favor verifica tu conexión y vuelve a intentar.');
+      console.error('Error submitting to Formspree:', err);
+      setSubmissionError('Network error connecting to Formspree. Please check your connection and try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -148,39 +148,39 @@ export function ContactSection({ initialHouse, houses = HOUSES, onSuccessSubmit 
           <div className="absolute top-0 right-0 w-80 h-80 bg-[#86efac]/10 rounded-full blur-[90px] pointer-events-none" />
 
           {isSubmitted ? (
-            /* Success Notice Screen */
+            /* Success Notice Screen in English */
             <div className="relative z-10 py-6 text-center animate-in fade-in zoom-in-95 duration-300">
               <div className="w-16 h-16 rounded-2xl bg-[#86efac]/20 border border-[#86efac]/40 text-[#86efac] flex items-center justify-center mx-auto mb-4 shadow-lg shadow-[#86efac]/10">
                 <CheckCircle2 className="w-9 h-9" />
               </div>
 
               <span className="inline-block px-3 py-1 rounded-full bg-[#86efac]/10 text-[#86efac] text-xs font-mono font-semibold uppercase tracking-wider mb-2">
-                Folio: {submittedOrderCode}
+                Order Folio: {submittedOrderCode}
               </span>
 
               <h3 className="font-brand text-2xl sm:text-3xl font-black text-white mb-2">
-                ¡Solicitud enviada con éxito!
+                Request Sent Successfully!
               </h3>
               <p className="text-sm text-[#c3d6c7] max-w-md mx-auto leading-relaxed mb-6 font-body">
-                Hemos recibido tus datos a través de Formspree. Nos pondremos en contacto contigo vía email o en Roblox para coordinar la sesión de construcción en tu parcela.
+                We have received your details via Formspree. Our team will contact you promptly by email or on Roblox to coordinate your Bloxburg building session.
               </p>
 
               {/* Data Summary Card */}
               <div className="max-w-md mx-auto p-5 rounded-2xl bg-black/40 border border-white/10 text-left text-xs space-y-2 mb-6">
                 <div className="flex justify-between items-center py-1 border-b border-white/5">
-                  <span className="text-[#8ba391]">Nombre del cliente:</span>
+                  <span className="text-[#8ba391]">Client Name:</span>
                   <span className="font-semibold text-white">{formData.fullName}</span>
                 </div>
                 <div className="flex justify-between items-center py-1 border-b border-white/5">
-                  <span className="text-[#8ba391]">Usuario de Roblox:</span>
+                  <span className="text-[#8ba391]">Roblox Username:</span>
                   <span className="font-mono text-[#86efac]">@{formData.robloxUsername}</span>
                 </div>
                 <div className="flex justify-between items-center py-1 border-b border-white/5">
-                  <span className="text-[#8ba391]">Correo electrónico:</span>
+                  <span className="text-[#8ba391]">Contact Email:</span>
                   <span className="text-white">{formData.email}</span>
                 </div>
                 <div className="flex justify-between items-center py-1">
-                  <span className="text-[#8ba391]">Modelo seleccionado:</span>
+                  <span className="text-[#8ba391]">Selected Model:</span>
                   <span className="font-semibold text-white">{formData.houseName}</span>
                 </div>
               </div>
@@ -190,7 +190,7 @@ export function ContactSection({ initialHouse, houses = HOUSES, onSuccessSubmit 
                 className="liquid-glass-btn px-6 py-2.5 rounded-xl text-xs uppercase tracking-wider font-semibold text-white hover:text-[#86efac] inline-flex items-center gap-2 cursor-pointer transition-colors"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                <span>Enviar otra solicitud</span>
+                <span>Submit Another Request</span>
               </button>
             </div>
           ) : (
