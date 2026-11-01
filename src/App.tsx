@@ -156,8 +156,10 @@ export default function App() {
       <main className="flex-1">
         {/* Hero Section */}
         <Hero
+          featuredHouse={displayFeatured[0]}
           onExploreCatalog={scrollToCatalog}
           onExploreProcess={scrollToProcess}
+          onSelectHouse={handleSelectHouseForDetail}
         />
 
         {/* Featured Houses */}
