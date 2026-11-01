@@ -1,11 +1,34 @@
 import { ArrowDown, Sparkles, ShieldCheck, Clock } from 'lucide-react';
+import { House } from '../data/houses';
+import { formatBloxburgCash, formatPriceUSD } from '../utils/houseFilters';
 
 interface HeroProps {
+  featuredHouse?: House | null;
   onExploreCatalog: () => void;
   onExploreProcess: () => void;
+  onSelectHouse?: (house: House) => void;
 }
 
-export function Hero({ onExploreCatalog, onExploreProcess }: HeroProps) {
+export function Hero({
+  featuredHouse,
+  onExploreCatalog,
+  onExploreProcess,
+  onSelectHouse,
+}: HeroProps) {
+  const house = featuredHouse;
+  const houseName = house ? house.name : 'Villa Luminosa';
+  const houseImage = house ? house.mainImage : '/src/assets/images/bloxburg_modern_villa_1793408050800.jpg';
+  const housePriceUSD = house ? formatPriceUSD(house.priceUSD) : '$28 USD';
+  const houseCash = house ? formatBloxburgCash(house.bloxburgCashEst) : '~$185k $B';
+
+  const handleCardClick = () => {
+    if (house && onSelectHouse) {
+      onSelectHouse(house);
+    } else {
+      onExploreCatalog();
+    }
+  };
+
   return (
     <section id="home" className="relative pt-32 pb-20 md:pt-40 md:pb-28 overflow-hidden">
       {/* Background ambient lighting effects matching forest green palette */}
@@ -17,7 +40,6 @@ export function Hero({ onExploreCatalog, onExploreProcess }: HeroProps) {
           
           {/* Left Column: Brand Message and CTAs */}
           <div className="lg:col-span-7 flex flex-col items-start text-left">
-            
             {/* Brand Slogan pill / kicker */}
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full liquid-glass border border-white/15 text-xs font-semibold text-[#86efac] mb-6">
               <Sparkles className="w-3.5 h-3.5" />
@@ -52,7 +74,7 @@ export function Hero({ onExploreCatalog, onExploreProcess }: HeroProps) {
               </button>
             </div>
 
-            {/* Key Service Highlights (Homes built counter removed per user request) */}
+            {/* Key Service Highlights */}
             <div className="grid grid-cols-2 gap-6 pt-6 border-t border-white/10 w-full max-w-md text-left">
               <div>
                 <p className="text-2xl sm:text-3xl font-extrabold text-white font-display tabular-nums">1-3h</p>
@@ -63,39 +85,46 @@ export function Hero({ onExploreCatalog, onExploreProcess }: HeroProps) {
                 <p className="text-xs text-[#9bb3a0] mt-0.5">Satisfaction Guaranteed</p>
               </div>
             </div>
-
           </div>
 
-          {/* Right Column: Visual Hero Card with Liquid Glass frame */}
+          {/* Right Column: Visual Hero Card connected dynamically to Supabase */}
           <div className="lg:col-span-5 relative">
             <div className="relative rounded-3xl p-3 liquid-glass border border-white/20 shadow-2xl shadow-black/50">
-              
               {/* Bloxburg Villa Showcase Image */}
-              <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-[#162419]">
+              <div
+                className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-[#162419] cursor-pointer group"
+                onClick={handleCardClick}
+              >
                 <img
-                  src="/src/assets/images/bloxburg_modern_villa_1793408050800.jpg"
-                  alt="Luxury Bloxburg Villa HAUSBURG"
-                  className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-700"
+                  src={houseImage}
+                  alt={houseName}
+                  className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
                   referrerPolicy="no-referrer"
                 />
                 
                 {/* Subtle gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none" />
 
                 {/* Floating Glass Tag inside the photo */}
                 <div className="absolute top-4 left-4 liquid-glass px-3 py-1.5 rounded-lg border border-white/25 flex items-center gap-2 text-xs font-semibold text-white">
                   <span className="w-2 h-2 rounded-full bg-[#86efac]" />
-                  <span>Featured Build: Villa Luminosa</span>
+                  <span>Featured Build: {houseName}</span>
                 </div>
 
+                {/* Bottom details card */}
                 <div className="absolute bottom-4 left-4 right-4 liquid-glass p-3 rounded-xl border border-white/20 flex items-center justify-between">
                   <div>
                     <p className="text-xs text-[#a3b899]">Estimated Investment</p>
-                    <p className="text-lg font-bold text-white font-display">$28 USD <span className="text-xs text-[#c3d6c7] font-normal">· ~$185k $B</span></p>
+                    <p className="text-lg font-bold text-white font-display">
+                      {housePriceUSD} <span className="text-xs text-[#c3d6c7] font-normal">· {houseCash}</span>
+                    </p>
                   </div>
                   <button
-                    onClick={onExploreCatalog}
-                    className="liquid-glass-btn px-3 py-1.5 text-xs text-white rounded-lg font-medium hover:text-[#86efac]"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCardClick();
+                    }}
+                    className="liquid-glass-btn px-3 py-1.5 text-xs text-white rounded-lg font-medium hover:text-[#86efac] cursor-pointer"
                   >
                     View details
                   </button>
@@ -113,7 +142,6 @@ export function Hero({ onExploreCatalog, onExploreProcess }: HeroProps) {
                   Scheduled live sessions
                 </span>
               </div>
-
             </div>
           </div>
 
